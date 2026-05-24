@@ -1,78 +1,65 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
+from unittest.mock import MagicMock, patch
 from fastapi import HTTPException
 
-from app.services.chat_service import (
-    save_transcript,
-    query_transcripts
-)
+from app.services.chat_service import save_transcript, query_transcripts
 
-
-# -------------------------
-# save_transcript
-# -------------------------
-
-@patch("app.services.chat_service.split_text_into_chunks")
-def test_save_transcript_success(mock_split):
-
-    mock_chunks = ["chunk1", "chunk2"]
-    mock_split.return_value = mock_chunks
-
+def test_save_transcript_success():
     mock_vector_store = MagicMock()
 
-    save_transcript(
-        transcript="hello world",
-        vector_store=mock_vector_store
-    )
+    fake_chunks = [MagicMock(), MagicMock()]
+    fake_chunks[0].metadata = {}
+    fake_chunks[1].metadata = {}
 
-    mock_split.assert_called_once_with("hello world")
+    with patch(
+        "app.services.chat_service.split_text_into_chunks",
+        return_value=fake_chunks
+    ):
+        save_transcript(
+            transcript="hello world",
+            transcript_id="abc123",
+            vector_store=mock_vector_store
+        )
 
-    mock_vector_store.add_documents.assert_called_once_with(
-        mock_chunks
-    )
+    # ensure metadata was attached
+    for chunk in fake_chunks:
+        assert chunk.metadata["transcript_id"] == "abc123"
 
-@patch("app.services.chat_service.split_text_into_chunks")
-def test_save_transcript_failure(mock_split):
+    # ensure DB was called once
+    mock_vector_store.add_documents.assert_called_once_with(fake_chunks)
 
-    mock_split.return_value = ["chunk1"]
-
+def test_save_transcript_db_failure():
     mock_vector_store = MagicMock()
+    mock_vector_store.add_documents.side_effect = Exception("db failure")
 
-    mock_vector_store.add_documents.side_effect = Exception(
-        "DB failure"
-    )
+    fake_chunks = [MagicMock()]
+    fake_chunks[0].metadata = {}
+
+    with patch(
+        "app.services.chat_service.split_text_into_chunks",
+        return_value=fake_chunks
+    ):
+        with pytest.raises(HTTPException) as exc:
+            save_transcript(
+                transcript="hello",
+                transcript_id="abc",
+                vector_store=mock_vector_store
+            )
+
+    assert exc.value.status_code == 500
+    assert "processing new transcript" in exc.value.detail.lower()
+
+def test_query_transcripts_no_results():
+    mock_vector_store = MagicMock()
+    mock_vector_store.similarity_search_with_score.return_value = [
+        (MagicMock(page_content="irrelevant"), 5.0),
+    ]
 
     with pytest.raises(HTTPException) as exc:
-
-        save_transcript(
-            transcript="hello",
+        query_transcripts(
+            query="test",
+            prompt=MagicMock(),
             vector_store=mock_vector_store
         )
 
     assert exc.value.status_code == 500
-    assert exc.value.detail == "DB failure"
-
-
-# -------------------------
-# query_transcripts
-# -------------------------
-
-def test_query_transcripts_empty_collection():
-
-    mock_collection = MagicMock()
-    mock_collection.count.return_value = 0
-
-    mock_vector_store = MagicMock()
-    mock_vector_store._collection = mock_collection
-
-    with pytest.raises(HTTPException) as exc:
-
-        query_transcripts(
-            query="hello",
-            prompt="prompt",
-            vector_store=mock_vector_store
-        )
-
-    assert exc.value.status_code == 400
-    assert exc.value.detail == "No transcript loaded."
