@@ -1,0 +1,6 @@
+services:
+  api:
+    restart: unless-stopped
+
+  chromadb:
+    restart: unless-stopped
