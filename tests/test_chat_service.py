@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from fastapi import HTTPException
-
+from app.models.transcript_request import TranscriptRequest
 from app.services.chat_service import save_transcript, query_transcripts
 
 def test_save_transcript_success():
@@ -16,7 +16,7 @@ def test_save_transcript_success():
         return_value=fake_chunks
     ):
         save_transcript(
-            transcript="hello world",
+            transcript=TranscriptRequest(transcript="hello world"),
             transcript_id="abc123",
             vector_store=mock_vector_store
         )
@@ -41,7 +41,7 @@ def test_save_transcript_db_failure():
     ):
         with pytest.raises(HTTPException) as exc:
             save_transcript(
-                transcript="hello",
+                transcript=TranscriptRequest(transcript="hello"),
                 transcript_id="abc",
                 vector_store=mock_vector_store
             )
