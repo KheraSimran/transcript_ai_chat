@@ -5,12 +5,13 @@ from uuid import uuid4
 from app.core.logger import get_logger
 from app.services.chat_service import query_transcripts, save_transcript
 from fastapi import APIRouter, Request
+from app.models.transcript_request import TranscriptRequest
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 @router.post('/upload-transcript')
-async def upload_transcript(transcript: str, request: Request) -> dict:
+async def upload_transcript(transcript: TranscriptRequest, request: Request) -> dict:
     """Upload and index transcript content for querying.
 
     Args:
@@ -28,7 +29,7 @@ async def upload_transcript(transcript: str, request: Request) -> dict:
     transcript_id = str(uuid4())
     
     vector_store = request.app.state.vector_store
-    save_transcript(transcript, transcript_id, vector_store)
+    save_transcript(transcript.transcript, transcript_id, vector_store)
 
     return {'message': 'Transcript saved successfully!', 
             'transcript_id': transcript_id}
