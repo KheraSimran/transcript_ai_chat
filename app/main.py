@@ -11,6 +11,17 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from app.core.config import settings
 from app.api.routes import router
+from fastapi.middleware.cors import CORSMiddleware
+import os
+
+ENV = os.getenv("ENV", "dev")
+
+if ENV == "dev":
+    origins = [
+        "http://localhost:5173",
+    ]
+else:
+    origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
 
 COLLECTION_NAME = 'transcript_db'
 
@@ -39,6 +50,14 @@ app = FastAPI(title='Transcript AI Chat',
               description='Chat with your transcripts', 
               version='1.0.0',
               lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(router, prefix='/api')
 
 @app.get('/')

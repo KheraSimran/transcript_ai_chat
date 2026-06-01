@@ -36,9 +36,35 @@ jobs:
         run: |
           pytest tests/ -v
 
+  frontend-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        env:
+          VITE_API_BASE: http://localhost:8000/api
+        run: |
+          cd frontend
+          npm run build
+
   # Only deploy when tests pass AND we push to main
   deploy:
-    needs: test
+    needs:
+      - test
+      - frontend-build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
