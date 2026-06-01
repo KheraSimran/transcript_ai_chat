@@ -61,7 +61,7 @@ def query_transcripts(query: str, prompt: str, vector_store: Chroma, transcript_
         if transcript_id:
             transcript_filter["transcript_id"] = transcript_id
 
-        docs_and_scores = vector_store.similarity_search_with_score(query, k=3, filter=transcript_filter if transcript_filter else None)
+        docs_and_scores = vector_store.similarity_search_with_score(query, k=10, filter=transcript_filter if transcript_filter else None)
 
         logger.info("Context documents retrieved successfully.")
 
