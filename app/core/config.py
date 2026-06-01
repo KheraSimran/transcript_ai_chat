@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     langsmith_endpoint: str = 'https://api.smith.langchain.com'
     langsmith_project: str = 'resume-match-ai-tracing'
     langsmith_api_key: str = ''
+    ENV : str = 'dev'
 
     model_config = ConfigDict(env_file=".env")
 
