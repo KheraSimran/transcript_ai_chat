@@ -6,6 +6,8 @@ This project is a full-stack Retrieval-Augmented Generation (RAG) application th
 
 The system is designed to support searching across large transcript datasets and answering questions with context-aware responses.
 
+The frontend was developed using an AI-assisted workflow, leveraging Claude to accelerate UI implementation and iteration. Generated code was reviewed, tested, and refactored to align with project architecture, coding standards, and maintainability requirements.
+
 ## Tech Stack
 
 **Backend**
