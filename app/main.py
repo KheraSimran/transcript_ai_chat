@@ -12,9 +12,9 @@ from langchain_chroma import Chroma
 from app.core.config import settings
 from app.api.routes import router
 from fastapi.middleware.cors import CORSMiddleware
-from chromadb.config import Settings as ChromaSettings
 import os
 from app.core.logger import get_logger
+import chromadb
 
 logger = get_logger(__name__)
 
@@ -40,28 +40,34 @@ async def lifespan(app: FastAPI):
         None: Allows the application to run within the context.
     """
     embedding = OpenAIEmbeddings()
-    
-    chroma_settings = None
-    if ENV != 'dev':
-        chroma_settings = ChromaSettings(chroma_server_ssl_enabled=True)
-    
+
+    if ENV == "dev":
+        chroma_client = chromadb.HttpClient(
+            host=settings.chroma_host,
+            port=settings.chroma_port,
+        )
+    else:
+        chroma_client = chromadb.HttpClient(
+            host=settings.chroma_host,
+            port=settings.chroma_port,
+            ssl=True,  # chromadb 1.x uses ssl= directly on HttpClient
+        )
+
     logger.info(
         "ENV=%s host=%s port=%s ssl=%s",
         ENV,
         settings.chroma_host,
         settings.chroma_port,
-        chroma_settings.chroma_server_ssl_enabled if chroma_settings else False
+        ENV != "dev"
     )
-    
+
     app.state.vector_store = Chroma(
-            collection_name=COLLECTION_NAME,
-            embedding_function=embedding,
-            host=settings.chroma_host,
-            port=settings.chroma_port,
-            client_settings=chroma_settings,
+        collection_name=COLLECTION_NAME,
+        embedding_function=embedding,
+        client=chroma_client,  # pass the client directly, drop host/port/client_settings
     )
     app.state.rag_prompt = hub.pull('rlm/rag-prompt')
-
+    
     yield
 
 app = FastAPI(title='Transcript AI Chat', 
