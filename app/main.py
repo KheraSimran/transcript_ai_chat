@@ -12,6 +12,7 @@ from langchain_chroma import Chroma
 from app.core.config import settings
 from app.api.routes import router
 from fastapi.middleware.cors import CORSMiddleware
+from chromadb.config import Settings as ChromaSettings
 import os
 
 ENV = os.getenv("ENV", "dev")
@@ -36,11 +37,17 @@ async def lifespan(app: FastAPI):
         None: Allows the application to run within the context.
     """
     embedding = OpenAIEmbeddings()
+    
+    chroma_settings = None
+    if ENV != 'dev':
+        chroma_settings = ChromaSettings
+    
     app.state.vector_store = Chroma(
             collection_name=COLLECTION_NAME,
             embedding_function=embedding,
             host=settings.chroma_host,
-            port=settings.chroma_port
+            port=settings.chroma_port,
+            client_settings=chroma_settings
     )
     app.state.rag_prompt = hub.pull('rlm/rag-prompt')
 
