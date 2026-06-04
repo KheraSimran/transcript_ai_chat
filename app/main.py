@@ -14,6 +14,9 @@ from app.api.routes import router
 from fastapi.middleware.cors import CORSMiddleware
 from chromadb.config import Settings as ChromaSettings
 import os
+from app.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 ENV = os.getenv("ENV", "dev")
 
@@ -42,12 +45,20 @@ async def lifespan(app: FastAPI):
     if ENV != 'dev':
         chroma_settings = ChromaSettings(chroma_server_ssl_enabled=True)
     
+    logger.info(
+        "ENV=%s host=%s port=%s ssl=%s",
+        ENV,
+        settings.chroma_host,
+        settings.chroma_port,
+        chroma_settings.chroma_server_ssl_enabled if chroma_settings else False
+    )
+    
     app.state.vector_store = Chroma(
             collection_name=COLLECTION_NAME,
             embedding_function=embedding,
             host=settings.chroma_host,
             port=settings.chroma_port,
-            client_settings=chroma_settings
+            client_settings=chroma_settings,
     )
     app.state.rag_prompt = hub.pull('rlm/rag-prompt')
 
