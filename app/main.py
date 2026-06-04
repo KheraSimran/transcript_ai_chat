@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     
     chroma_settings = None
     if ENV != 'dev':
-        chroma_settings = ChromaSettings
+        chroma_settings = ChromaSettings(chroma_server_ssl_enabled=True)
     
     app.state.vector_store = Chroma(
             collection_name=COLLECTION_NAME,
